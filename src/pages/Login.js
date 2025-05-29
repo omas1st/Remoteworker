@@ -23,9 +23,9 @@ export default function Login() {
 
       // Redirect based on profileType
       if (user.profileType === 'worker') {
-        navigate('/worker-dashboard');
+        navigate('/worker');
       } else if (user.profileType === 'customer') {
-        navigate('/customer-dashboard');
+        navigate('/customer');
       } else if (user.role === 'admin') {
         navigate('/admin/users');
       } else {

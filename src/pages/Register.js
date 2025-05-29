@@ -51,9 +51,9 @@ export default function Register() {
 
       // Redirect based on profileType
       if (form.profileType === 'worker') {
-        navigate('/worker-dashboard');
+        navigate('/worker');
       } else {
-        navigate('/customer-dashboard');
+        navigate('/customer');
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Registration failed');
