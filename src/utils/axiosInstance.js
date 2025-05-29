@@ -1,13 +1,18 @@
 import axios from 'axios';
 
-const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
-});
+// 1) Use the env var when available (your Vercel-deployed backend)
+// 2) Otherwise default to localhost for local development
+const baseURL = process.env.REACT_APP_API_URL
+  ? process.env.REACT_APP_API_URL.replace(/\/$/, '') // strip trailing slash
+  : 'http://localhost:5000/api';
 
-api.interceptors.request.use(config => {
-  const token = localStorage.getItem('token');
-  if (token) config.headers['x-auth-token'] = token;
-  return config;
+console.log('📡 API Base URL:', baseURL);
+
+const api = axios.create({
+  baseURL,
+  headers: { 'Content-Type': 'application/json' },
+  // If you ever switch to cookie-based auth, you can enable:
+  // withCredentials: true
 });
 
 export default api;
