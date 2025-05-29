@@ -1,0 +1,12 @@
+.form-container {
+    max-width: 400px;
+    margin: 4rem auto;
+  }
+  
+  .form-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+  }

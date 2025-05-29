@@ -1,0 +1,13 @@
+.users-profile {
+    padding: 1rem;
+  }
+  .users-profile table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .users-profile th,
+  .users-profile td {
+    border: 1px solid #ddd;
+    padding: 0.5rem;
+  }
+  

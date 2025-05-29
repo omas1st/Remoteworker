@@ -1,0 +1,63 @@
+.home {
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    color: white;
+  }
+  
+  .overlay {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 4rem 2rem;
+  }
+  
+  .section-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    border-radius: 8px;
+  }
+  
+  .intro {
+    text-align: center;
+    background: rgba(74, 144, 226, 0.9);
+  }
+  
+  .bigger {
+    background: rgba(52, 199, 89, 0.9);
+  }
+  
+  .variety {
+    background: rgba(255, 149, 0, 0.9);
+  }
+  
+  .home-btn {
+    display: inline-block;
+    padding: 1rem 2rem;
+    background: white;
+    color: #333;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-top: 1rem;
+    transition: transform 0.2s ease;
+  }
+  
+  .home-btn:hover {
+    transform: translateY(-2px);
+  }
+  
+  .features ul {
+    columns: 2;
+    list-style: none;
+    padding: 0;
+  }
+  
+  @media (max-width: 768px) {
+    .features ul {
+      columns: 1;
+    }
+    
+    .section-container {
+      margin: 1rem auto;
+      padding: 1.5rem;
+    }
+  }

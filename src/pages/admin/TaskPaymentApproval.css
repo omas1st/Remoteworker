@@ -1,0 +1,18 @@
+/* frontend/src/pages/admin/TaskPaymentApproval.css */
+.task-approval {
+    padding: 1rem;
+  }
+  .task-approval table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .task-approval th,
+  .task-approval td {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+  .task-approval button {
+    padding: 0.25rem 0.5rem;
+  }
+  

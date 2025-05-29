@@ -1,0 +1,6 @@
+.task-form input {
+    margin-right: 0.5rem; padding: 0.5rem; border:1px solid #ccc; border-radius:4px;
+  }
+  .task-form button { padding:0.5rem 1rem; }
+  .task-list li { margin: 0.5rem 0; }
+  

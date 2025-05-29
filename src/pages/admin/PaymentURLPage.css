@@ -1,0 +1,11 @@
+.url-slot {
+    display: flex;
+    margin: 0.5rem 0;
+  }
+  .url-slot input {
+    flex: 1; padding:0.5rem; border:1px solid #ccc; border-radius:4px;
+  }
+  .url-slot button {
+    margin-left:0.5rem; padding:0.5rem 1rem;
+  }
+  

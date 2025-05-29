@@ -1,0 +1,15 @@
+/* frontend/src/pages/AdminPanel.css */
+.admin-panel {
+    padding: 1rem;
+  }
+  .admin-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .admin-nav a {
+    text-decoration: none;
+    color: #007bff;
+    font-weight: 500;
+  }
+  

@@ -1,0 +1,16 @@
+/* Shares styles with Withdraw.css - consider combining in main CSS */
+.form-container {
+    max-width: 500px;
+    text-align: center;
+  }
+  
+  .form-container h2 {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-container input[type="text"] {
+    font-size: 1.8rem;
+    letter-spacing: 0.5rem;
+    text-align: center;
+    padding: 1rem;
+  }

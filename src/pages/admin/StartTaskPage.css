@@ -1,0 +1,6 @@
+.url-slot {
+    display:flex; align-items:center; margin:0.5rem 0;
+  }
+  .url-slot span { width:200px; }
+  .url-slot input { flex:1; padding:0.5rem; border:1px solid #ccc; border-radius:4px; }
+  
