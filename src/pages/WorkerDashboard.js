@@ -13,16 +13,21 @@ export default function WorkerDashboard() {
 
   const loadData = async () => {
     try {
-      const { data: u } = await api.get('/auth/me');
-      setUser(u);
+      // Use Promise.all for parallel requests
+      const [userResponse, tasksResponse, messagesResponse] = await Promise.all([
+        api.get('/auth/me'),
+        api.get('/tasks'),
+        api.get('/users/messages')
+      ]);
 
-      const { data: t } = await api.get('/tasks');
-      setTasks(t);
+      setUser(userResponse.data);
+      setTasks(tasksResponse.data);
+      setMessages(messagesResponse.data);
 
-      // build progress - FIXED: convert ObjectId to string
-      const subs = t.flatMap(task =>
+      // Build progress
+      const subs = tasksResponse.data.flatMap(task =>
         (task.submissions || [])
-          .filter(s => s.user.toString() === u._id)
+          .filter(s => s.user.toString() === userResponse.data._id)
           .map(s => ({ 
             title: task.title, 
             amount: task.amount, 
@@ -30,12 +35,12 @@ export default function WorkerDashboard() {
           }))
       );
       setProgress(subs);
-
-      // fetch messages
-      const { data: msgs } = await api.get('/users/messages');
-      setMessages(msgs);
     } catch (err) {
       console.error('Session error:', err);
+      if (err.response?.status === 401) {
+        // Clear invalid token
+        localStorage.removeItem('token');
+      }
       setUser(null);
     }
   };
@@ -44,10 +49,9 @@ export default function WorkerDashboard() {
     loadData();
   }, []);
 
-  const handleRetry = () => {
-    // Clear invalid token and reload
+  const handleLoginAgain = () => {
     localStorage.removeItem('token');
-    window.location.reload();
+    navigate('/login');
   };
 
   if (user === undefined) {
@@ -58,8 +62,7 @@ export default function WorkerDashboard() {
     return (
       <div className="session-error">
         <p>Session expired or not authenticated.</p>
-        <button onClick={handleRetry}>Retry</button>
-        <p>Or <a href="/login">login again</a></p>
+        <button onClick={handleLoginAgain}>Login Again</button>
       </div>
     );
   }
