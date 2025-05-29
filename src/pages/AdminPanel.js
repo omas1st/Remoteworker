@@ -8,16 +8,21 @@ export default function AdminPanel() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Verify admin token
-    api.get('/admin/users').catch(() => navigate('/admin/login'));
+    const verifyAdmin = async () => {
+      try {
+        await api.get('/admin/users');
+      } catch (err) {
+        navigate('/admin/login');
+      }
+    };
+    
+    verifyAdmin();
 
-    // Listen for real-time updates
     const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:5000');
     socket.on('adminNotification', data => {
-      alert(
-        `Admin Notice:\nUser ${data.userId} ${data.status} "${data.taskTitle}" — $${data.amount}`
-      );
+      alert(`Admin Notice:\nUser ${data.userId} ${data.status} "${data.taskTitle}" — $${data.amount}`);
     });
+    
     return () => socket.disconnect();
   }, [navigate]);
 

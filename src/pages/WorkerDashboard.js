@@ -1,7 +1,7 @@
-// frontend/src/pages/WorkerDashboard.js
 import React, { useEffect, useState } from 'react';
 import api from '../utils/axiosInstance';
 import './WorkerDashboard.css';
+import { useNavigate } from 'react-router-dom';
 
 export default function WorkerDashboard() {
   const [user, setUser] = useState(undefined); // undefined = loading, null = error
@@ -9,6 +9,7 @@ export default function WorkerDashboard() {
   const [progress, setProgress] = useState([]);
   const [messages, setMessages] = useState([]);
   const [showMsgs, setShowMsgs] = useState(false);
+  const navigate = useNavigate();
 
   const loadData = async () => {
     try {
@@ -18,18 +19,23 @@ export default function WorkerDashboard() {
       const { data: t } = await api.get('/tasks');
       setTasks(t);
 
-      // build progress
+      // build progress - FIXED: convert ObjectId to string
       const subs = t.flatMap(task =>
         (task.submissions || [])
-          .filter(s => s.user === u._id)
-          .map(s => ({ title: task.title, amount: task.amount, status: s.status }))
+          .filter(s => s.user.toString() === u._id)
+          .map(s => ({ 
+            title: task.title, 
+            amount: task.amount, 
+            status: s.status 
+          }))
       );
       setProgress(subs);
 
       // fetch messages
       const { data: msgs } = await api.get('/users/messages');
       setMessages(msgs);
-    } catch {
+    } catch (err) {
+      console.error('Session error:', err);
       setUser(null);
     }
   };
@@ -38,14 +44,22 @@ export default function WorkerDashboard() {
     loadData();
   }, []);
 
+  const handleRetry = () => {
+    // Clear invalid token and reload
+    localStorage.removeItem('token');
+    window.location.reload();
+  };
+
   if (user === undefined) {
     return <div className="dashboard-loading">Loading...</div>;
   }
+  
   if (user === null) {
     return (
-      <div>
+      <div className="session-error">
         <p>Session expired or not authenticated.</p>
-        <button onClick={() => window.location.reload()}>Retry</button>
+        <button onClick={handleRetry}>Retry</button>
+        <p>Or <a href="/login">login again</a></p>
       </div>
     );
   }
@@ -64,7 +78,7 @@ export default function WorkerDashboard() {
       return alert('You can only withdraw after 7 days of registration');
     }
     // Passed checks
-    window.location.href = '/withdraw';
+    navigate('/withdraw');
   };
 
   return (
@@ -101,7 +115,7 @@ export default function WorkerDashboard() {
           <div key={task._id} className="job-card">
             <h4>{task.title}</h4>
             <p>Pay: ${task.amount}</p>
-            <button onClick={() => window.location.href = `/task/${task._id}`}>
+            <button onClick={() => navigate(`/task/${task._id}`)}>
               Go to Task
             </button>
           </div>

@@ -17,17 +17,12 @@ export default function Login() {
       });
 
       const { token, user } = res.data;
-      // Store token & set default header
       localStorage.setItem('token', token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-      // Redirect based on profileType
+      
       if (user.profileType === 'worker') {
         navigate('/worker');
       } else if (user.profileType === 'customer') {
         navigate('/customer');
-      } else if (user.role === 'admin') {
-        navigate('/admin/users');
       } else {
         navigate('/');
       }
