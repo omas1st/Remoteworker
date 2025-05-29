@@ -1,4 +1,3 @@
-// frontend/src/pages/Login.js
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/axiosInstance';
@@ -12,20 +11,25 @@ export default function Login() {
   const handleLogin = async e => {
     e.preventDefault();
     try {
-      const res = await api.post('/auth/login', { email, password });
+      const res = await api.post('/auth/login', {
+        email: email.toLowerCase(),
+        password
+      });
+
       const { token, user } = res.data;
-      // Store token
+      // Store token & set default header
       localStorage.setItem('token', token);
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
       // Redirect based on profileType
       if (user.profileType === 'worker') {
-        navigate('/worker');
+        navigate('/worker-dashboard');
       } else if (user.profileType === 'customer') {
-        navigate('/customer');
-      } else if (user.profileType === 'admin') {
+        navigate('/customer-dashboard');
+      } else if (user.role === 'admin') {
         navigate('/admin/users');
       } else {
-        navigate('/'); // fallback
+        navigate('/');
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Login failed');
@@ -43,6 +47,7 @@ export default function Login() {
           onChange={e => setEmail(e.target.value)}
           required
         />
+
         <label>Password</label>
         <input
           type="password"
@@ -50,6 +55,7 @@ export default function Login() {
           onChange={e => setPassword(e.target.value)}
           required
         />
+
         <button type="submit">Login</button>
       </form>
       <div className="form-footer">
