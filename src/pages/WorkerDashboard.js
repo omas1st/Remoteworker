@@ -1,154 +1,90 @@
-import React, { useEffect, useState, useCallback } from 'react';
+// frontend/src/pages/WorkerDashboard.js
+import React, { useEffect, useState } from 'react';
 import api from '../utils/axiosInstance';
 import './WorkerDashboard.css';
-import { useNavigate } from 'react-router-dom';
 
 export default function WorkerDashboard() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(undefined); // undefined = loading, null = error
   const [tasks, setTasks] = useState([]);
   const [progress, setProgress] = useState([]);
   const [messages, setMessages] = useState([]);
   const [showMsgs, setShowMsgs] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
 
-  // Wrap loadData in useCallback to memoize the function
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    
+  const loadData = async () => {
     try {
-      // Use Promise.all for parallel requests
-      const [userResponse, tasksResponse, messagesResponse] = await Promise.all([
-        api.get('/auth/me'),
-        api.get('/tasks'),
-        api.get('/users/messages')
-      ]);
-      
-      setUser(userResponse.data);
-      setTasks(tasksResponse.data);
-      setMessages(messagesResponse.data);
+      const { data: u } = await api.get('/auth/me');
+      setUser(u);
 
-      // Build progress
-      const subs = tasksResponse.data.flatMap(task =>
+      const { data: t } = await api.get('/tasks');
+      setTasks(t);
+
+      // build progress
+      const subs = t.flatMap(task =>
         (task.submissions || [])
-          .filter(s => s.user.toString() === userResponse.data._id)
-          .map(s => ({ 
-            title: task.title, 
-            amount: task.amount, 
-            status: s.status 
-          }))
+          .filter(s => s.user === u._id)
+          .map(s => ({ title: task.title, amount: task.amount, status: s.status }))
       );
       setProgress(subs);
-    } catch (err) {
-      console.error('Worker Dashboard Error:', err);
-      setError('Failed to load dashboard data. Please try again.');
-      if (err.response?.status === 401) {
-        navigate('/login');
-      }
-    } finally {
-      setLoading(false);
+
+      // fetch messages
+      const { data: msgs } = await api.get('/users/messages');
+      setMessages(msgs);
+    } catch {
+      setUser(null);
     }
-  }, [navigate]); // Add navigate as dependency
+  };
 
   useEffect(() => {
     loadData();
-  }, [loadData]); // Now includes loadData in dependency array
+  }, []);
+
+  if (user === undefined) {
+    return <div className="dashboard-loading">Loading...</div>;
+  }
+  if (user === null) {
+    return (
+      <div>
+        <p>Session expired or not authenticated.</p>
+        <button onClick={() => window.location.reload()}>Retry</button>
+      </div>
+    );
+  }
 
   const handleWithdrawNav = () => {
-    if (!user) return;
-    
     // Check minimum balance
     if (user.walletBalance < 200) {
       return alert('Minimum withdrawal is $200');
     }
-    
     // Check 7-day requirement
     const registeredDate = new Date(user.registeredAt);
     const now = new Date();
     const diffMs = now - registeredDate;
     const diffDays = diffMs / (1000 * 60 * 60 * 24);
-    
     if (diffDays < 7) {
       return alert('You can only withdraw after 7 days of registration');
     }
-    
     // Passed checks
-    navigate('/withdraw');
+    window.location.href = '/withdraw';
   };
-
-  if (loading) {
-    return (
-      <div className="dashboard-loading">
-        <div className="spinner"></div>
-        <p>Loading your dashboard...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="error-container">
-        <h3>Error Loading Dashboard</h3>
-        <p>{error}</p>
-        <button onClick={loadData}>Retry</button>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="session-error">
-        <p>User data not available</p>
-        <button onClick={loadData}>Retry</button>
-      </div>
-    );
-  }
 
   return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <div className="welcome-section">
-          <h2>Welcome, {user.firstName} {user.lastName}</h2>
-          <p className="profile-type">Remote Worker</p>
-        </div>
-        
-        <button 
-          className={`msg-btn ${messages.length > 0 ? 'has-messages' : ''}`}
-          onClick={() => setShowMsgs(!showMsgs)}
-          aria-label="Notifications"
-        >
-          📨 {messages.length > 0 ? messages.length : ''}
+        <h2>Welcome, {user.firstName} {user.lastName}</h2>
+        <button className="msg-btn" onClick={() => setShowMsgs(!showMsgs)}>
+          📨 {messages.length}
         </button>
       </header>
 
       {showMsgs && (
         <div className="messages-panel">
-          <div className="panel-header">
-            <h3>Your Notifications</h3>
-            <button 
-              className="close-btn" 
-              onClick={() => setShowMsgs(false)}
-              aria-label="Close notifications"
-            >
-              ✕
-            </button>
-          </div>
-          
-          {messages.length === 0 ? (
-            <p className="no-messages">No new notifications</p>
-          ) : (
-            <ul className="messages-list">
+          <h3>Your Notifications</h3>
+          {messages.length === 0 ? <p>No messages.</p> : (
+            <ul>
               {messages.map((m, i) => (
-                <li key={i} className="message-item">
-                  <div className="message-header">
-                    <span className="message-sender">{m.from}</span>
-                    <span className="message-time">
-                      {new Date(m.date).toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="message-content">{m.content}</p>
+                <li key={i}>
+                  <small>{new Date(m.date).toLocaleString()}</small>
+                  <p>{m.content}</p>
                 </li>
               ))}
             </ul>
@@ -156,64 +92,34 @@ export default function WorkerDashboard() {
         </div>
       )}
 
-      <div className="wallet-section">
-        <div className="balance-card">
-          <span className="balance-label">Wallet Balance:</span>
-          <span className="balance-amount">${user.walletBalance.toFixed(2)}</span>
-        </div>
-        <button 
-          className="withdraw-btn"
-          onClick={handleWithdrawNav}
-          disabled={!user}
-        >
-          Withdraw Funds
-        </button>
+      <p>Wallet Balance: ${user.walletBalance.toFixed(2)}</p>
+      <button onClick={handleWithdrawNav}>Withdraw</button>
+
+      <h3>Available Tasks</h3>
+      <div className="task-list">
+        {tasks.map(task => (
+          <div key={task._id} className="job-card">
+            <h4>{task.title}</h4>
+            <p>Pay: ${task.amount}</p>
+            <button onClick={() => window.location.href = `/task/${task._id}`}>
+              Go to Task
+            </button>
+          </div>
+        ))}
       </div>
 
-      <div className="tasks-section">
-        <h3>Available Tasks</h3>
-        
-        {tasks.length === 0 ? (
-          <p className="no-tasks">No tasks available at the moment</p>
-        ) : (
-          <div className="task-grid">
-            {tasks.map(task => (
-              <div key={task._id} className="task-card">
-                <h4 className="task-title">{task.title}</h4>
-                <p className="task-pay">Pay: ${task.amount}</p>
-                <button 
-                  className="task-button"
-                  onClick={() => navigate(`/task/${task._id}`)}
-                >
-                  View Task Details
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="progress-section">
-        <h3>Your Task Progress</h3>
-        
-        {progress.length === 0 ? (
-          <p className="no-progress">You haven't started any tasks yet</p>
-        ) : (
-          <div className="progress-list">
-            {progress.map((p, i) => (
-              <div key={i} className="progress-item">
-                <div className="progress-header">
-                  <span className="task-name">{p.title}</span>
-                  <span className="task-amount">${p.amount}</span>
-                </div>
-                <div className="progress-status">
-                  Status: <span className={`status-${p.status}`}>{p.status}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <h3>Task Progress</h3>
+      {progress.length === 0 ? (
+        <p>No tasks started yet.</p>
+      ) : (
+        <ul className="progress-list">
+          {progress.map((p, i) => (
+            <li key={i}>
+              {p.title} — ${p.amount} — <strong>{p.status}</strong>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

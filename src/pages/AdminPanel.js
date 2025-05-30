@@ -8,35 +8,17 @@ export default function AdminPanel() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Session keep-alive on admin panel
-    const sessionTimer = setInterval(() => {
-      api.keepAlive();
-    }, 4 * 60 * 1000); // Every 4 minutes
-    
     // Verify admin token
-    const verifySession = async () => {
-      try {
-        await api.get('/admin/users');
-      } catch (err) {
-        navigate('/admin/login');
-      }
-    };
-    
-    verifySession();
+    api.get('/admin/users').catch(() => navigate('/admin/login'));
 
     // Listen for real-time updates
-    const socket = io(process.env.REACT_APP_API_URL || 'https://remoteworkerbackend.vercel.app', {
-      timeout: 30000
-    });
-    
+    const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:5000');
     socket.on('adminNotification', data => {
-      console.log('Admin notification:', data);
+      alert(
+        `Admin Notice:\nUser ${data.userId} ${data.status} "${data.taskTitle}" — $${data.amount}`
+      );
     });
-    
-    return () => {
-      clearInterval(sessionTimer);
-      socket.disconnect();
-    };
+    return () => socket.disconnect();
   }, [navigate]);
 
   return (

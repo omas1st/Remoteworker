@@ -1,5 +1,6 @@
+// frontend/src/pages/Login.js
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/axiosInstance';
 import './Login.css';
 
@@ -11,16 +12,23 @@ export default function Login() {
   const handleLogin = async e => {
     e.preventDefault();
     try {
-      const res = await api.post('/auth/login', { email: email.toLowerCase(), password });
+      const res = await api.post('/auth/login', { email, password });
       const { token, user } = res.data;
+      // Store token
       localStorage.setItem('token', token);
-      if (user.profileType === 'worker') navigate('/worker');
-      else if (user.profileType === 'customer') navigate('/customer');
-      else navigate('/');
+
+      // Redirect based on profileType
+      if (user.profileType === 'worker') {
+        navigate('/worker');
+      } else if (user.profileType === 'customer') {
+        navigate('/customer');
+      } else if (user.profileType === 'admin') {
+        navigate('/admin/users');
+      } else {
+        navigate('/'); // fallback
+      }
     } catch (err) {
-      console.error('Login error:', err);
-      if (err.code === 'ECONNABORTED') alert('Request timed out. Please try again.');
-      else alert(err.message || 'Login failed');
+      alert(err.response?.data?.message || 'Login failed');
     }
   };
 
@@ -29,14 +37,24 @@ export default function Login() {
       <h2>Login</h2>
       <form onSubmit={handleLogin}>
         <label>Email</label>
-        <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+        <input
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+        />
         <label>Password</label>
-        <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+        <input
+          type="password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+        />
         <button type="submit">Login</button>
       </form>
       <div className="form-footer">
-        <a href="/reset-password">Forgot Password?</a>
-        <a href="/register">Register</a>
+        <Link to="/reset-password">Forgot Password?</Link>
+        <Link to="/register">Register</Link>
       </div>
     </div>
   );
