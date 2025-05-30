@@ -35,8 +35,15 @@ export default function Register() {
     setLoading(true);
     setError('');
     
+    // Basic validation
     if (form.password !== form.confirm) {
       setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+    
+    if (form.password.length < 6) {
+      setError('Password must be at least 6 characters');
       setLoading(false);
       return;
     }
@@ -65,7 +72,15 @@ export default function Register() {
       }
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.response?.data?.message || err.message || 'Registration failed. Please try again.');
+      
+      // Handle specific error cases
+      if (err.response?.status === 400) {
+        setError(err.response.data.message || 'Validation error');
+      } else if (err.message.includes('timeout')) {
+        setError('Request timed out. Please try again.');
+      } else {
+        setError(err.message || 'Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -82,6 +97,7 @@ export default function Register() {
           name="profileType"
           value={form.profileType}
           onChange={handleChange}
+          disabled={loading}
         >
           <option value="worker">Remote Worker</option>
           <option value="customer">Customer</option>
@@ -93,6 +109,7 @@ export default function Register() {
           value={form.firstName}
           onChange={handleChange}
           required
+          disabled={loading}
         />
 
         <label>Last Name</label>
@@ -101,6 +118,7 @@ export default function Register() {
           value={form.lastName}
           onChange={handleChange}
           required
+          disabled={loading}
         />
 
         <label>Email</label>
@@ -110,6 +128,7 @@ export default function Register() {
           value={form.email}
           onChange={handleChange}
           required
+          disabled={loading}
         />
 
         <label>Phone</label>
@@ -118,10 +137,16 @@ export default function Register() {
           value={form.phone}
           onChange={handleChange}
           required
+          disabled={loading}
         />
 
         <label>Gender</label>
-        <select name="gender" value={form.gender} onChange={handleChange}>
+        <select 
+          name="gender" 
+          value={form.gender} 
+          onChange={handleChange}
+          disabled={loading}
+        >
           <option value="male">Male</option>
           <option value="female">Female</option>
         </select>
@@ -132,6 +157,7 @@ export default function Register() {
           value={form.country}
           onChange={handleChange}
           required
+          disabled={loading}
         >
           <option value="">Select country</option>
           {countries.map(c => (
@@ -141,13 +167,14 @@ export default function Register() {
           ))}
         </select>
 
-        <label>Password</label>
+        <label>Password (min 6 characters)</label>
         <input
           type="password"
           name="password"
           value={form.password}
           onChange={handleChange}
           required
+          disabled={loading}
         />
 
         <label>Confirm Password</label>
@@ -157,10 +184,21 @@ export default function Register() {
           value={form.confirm}
           onChange={handleChange}
           required
+          disabled={loading}
         />
 
-        <button type="submit" disabled={loading}>
-          {loading ? 'Registering...' : 'Register'}
+        <button 
+          type="submit" 
+          disabled={loading}
+          className={loading ? 'loading' : ''}
+        >
+          {loading ? (
+            <>
+              <span className="spinner"></span> Registering...
+            </>
+          ) : (
+            'Register'
+          )}
         </button>
       </form>
       

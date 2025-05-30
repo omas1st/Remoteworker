@@ -1,15 +1,15 @@
 import axios from 'axios';
 
-// Use environment variables
+// Use environment variable for API URL
 const baseURL = process.env.REACT_APP_API_URL || 'https://remoteworkerbackend.vercel.app/api';
-const backendURL = process.env.REACT_APP_BACKEND_URL || 'https://remoteworkerbackend.vercel.app';
 
-// Create instance
+// Create instance with timeout
 const api = axios.create({
   baseURL,
+  timeout: 10000, // 10 seconds timeout
   headers: { 
     'Content-Type': 'application/json',
-    'X-Requested-With': 'XMLHttpRequest'
+    'Accept': 'application/json'
   },
   withCredentials: true
 });
@@ -21,26 +21,42 @@ api.interceptors.request.use(config => {
     config.headers['x-auth-token'] = token;
   }
   
-  // Add backend URL to all requests
-  config.headers['X-Backend-URL'] = backendURL;
+  // Add cache-busting parameter
+  config.params = {
+    ...config.params,
+    _: Date.now()
+  };
   
   return config;
+}, error => {
+  return Promise.reject(error);
 });
 
 // Handle response errors
 api.interceptors.response.use(
   response => response,
   error => {
-    console.error('API Error:', error);
+    let errorMessage = 'Network error. Please check your connection.';
     
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+    if (error.response) {
+      // Server responded with error status (4xx, 5xx)
+      errorMessage = error.response.data?.message || 
+                    `Server error: ${error.response.status}`;
+    } else if (error.request) {
+      // Request was made but no response received
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = 'Request timeout. Please try again.';
+      } else {
+        errorMessage = 'No response from server. Please try again later.';
+      }
     }
     
+    // Return consistent error format
     return Promise.reject({
-      message: error.response?.data?.message || 'Network error',
-      status: error.response?.status || 500
+      message: errorMessage,
+      code: error.code,
+      status: error.response?.status,
+      response: error.response?.data
     });
   }
 );
