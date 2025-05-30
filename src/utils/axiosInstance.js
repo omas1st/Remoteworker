@@ -1,16 +1,16 @@
 import axios from 'axios';
 
-// Base URL from env or fallback
-const baseURL = process.env.REACT_APP_API_URL || 'https://remoteworkerbackend.vercel.app/api';
+// Use Vercel production URL for API
+const baseURL = 'https://remoteworkerbackend.vercel.app/api';
 
 // Create instance
 const api = axios.create({
   baseURL,
   headers: { 'Content-Type': 'application/json' },
-  withCredentials: true // Send cookies with requests
+  withCredentials: true
 });
 
-// If a token is already in localStorage, use it
+// Add token to requests
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -19,10 +19,10 @@ api.interceptors.request.use(config => {
   return config;
 });
 
+// Handle response errors
 api.interceptors.response.use(
   response => response,
   error => {
-    // Handle 401 Unauthorized errors
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';
