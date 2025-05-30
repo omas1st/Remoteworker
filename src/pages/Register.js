@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/axiosInstance';
 import './Register.css';
-import countryList from 'react-select-country-list';
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -16,17 +15,13 @@ export default function Register() {
     password: '',
     confirm: ''
   });
-  const [countries, setCountries] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    setCountries(countryList().getData());
-  }, []);
-
+  // Generic handler for all form fields
   const handleChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
     setError('');
   };
 
@@ -34,20 +29,21 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
-    // Basic validation
+
+    // Validate password match
     if (form.password !== form.confirm) {
       setError('Passwords do not match');
       setLoading(false);
       return;
     }
-    
+
+    // Validate length
     if (form.password.length < 6) {
       setError('Password must be at least 6 characters');
       setLoading(false);
       return;
     }
-    
+
     try {
       const payload = {
         profileType: form.profileType,
@@ -59,12 +55,11 @@ export default function Register() {
         country: form.country,
         password: form.password
       };
-      
-      const res = await api.post('/auth/register', payload);
 
-      // Store token and redirect
+      const res = await api.post('/auth/register', payload);
       localStorage.setItem('token', res.data.token);
-      
+
+      // Redirect based on profile type
       if (form.profileType === 'worker') {
         navigate('/worker');
       } else {
@@ -72,11 +67,9 @@ export default function Register() {
       }
     } catch (err) {
       console.error('Registration error:', err);
-      
-      // Handle specific error cases
-      if (err.response?.status === 400) {
-        setError(err.response.data.message || 'Validation error');
-      } else if (err.message.includes('timeout')) {
+      if (err.status === 400) {
+        setError(err.response?.message || 'Validation error');
+      } else if (err.code === 'ECONNABORTED') {
         setError('Request timed out. Please try again.');
       } else {
         setError(err.message || 'Registration failed. Please try again.');
@@ -90,7 +83,7 @@ export default function Register() {
     <div className="form-container">
       <h2>Register</h2>
       {error && <div className="error-message">{error}</div>}
-      
+
       <form onSubmit={handleSubmit}>
         <label>Profile Type</label>
         <select
@@ -141,9 +134,9 @@ export default function Register() {
         />
 
         <label>Gender</label>
-        <select 
-          name="gender" 
-          value={form.gender} 
+        <select
+          name="gender"
+          value={form.gender}
           onChange={handleChange}
           disabled={loading}
         >
@@ -152,20 +145,13 @@ export default function Register() {
         </select>
 
         <label>Country</label>
-        <select
+        <input
           name="country"
           value={form.country}
           onChange={handleChange}
           required
           disabled={loading}
-        >
-          <option value="">Select country</option>
-          {countries.map(c => (
-            <option key={c.value} value={c.label}>
-              {c.label}
-            </option>
-          ))}
-        </select>
+        />
 
         <label>Password (min 6 characters)</label>
         <input
@@ -187,11 +173,7 @@ export default function Register() {
           disabled={loading}
         />
 
-        <button 
-          type="submit" 
-          disabled={loading}
-          className={loading ? 'loading' : ''}
-        >
+        <button type="submit" disabled={loading} className={loading ? 'loading' : ''}>
           {loading ? (
             <>
               <span className="spinner"></span> Registering...
@@ -201,9 +183,11 @@ export default function Register() {
           )}
         </button>
       </form>
-      
+
       <div className="form-footer">
-        <p>Already have an account? <a href="/login">Login</a></p>
+        <p>
+          Already have an account? <a href="/login">Login</a>
+        </p>
       </div>
     </div>
   );
