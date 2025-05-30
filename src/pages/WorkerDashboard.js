@@ -4,18 +4,18 @@ import './WorkerDashboard.css';
 import { useNavigate } from 'react-router-dom';
 
 export default function WorkerDashboard() {
-  const [user, setUser] = useState(undefined);
+  const [user, setUser] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [progress, setProgress] = useState([]);
   const [messages, setMessages] = useState([]);
   const [showMsgs, setShowMsgs] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const loadData = async () => {
     setLoading(true);
-    setError(null);
+    setError('');
     
     try {
       // Use Promise.all for parallel requests
@@ -42,12 +42,10 @@ export default function WorkerDashboard() {
       setProgress(subs);
     } catch (err) {
       console.error('Worker Dashboard Error:', err);
-      setError('Failed to load dashboard data');
+      setError('Failed to load dashboard data. Please try again.');
       if (err.response?.status === 401) {
-        // Clear invalid token
-        localStorage.removeItem('token');
+        navigate('/login');
       }
-      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -56,43 +54,6 @@ export default function WorkerDashboard() {
   useEffect(() => {
     loadData();
   }, []);
-
-  const handleLoginAgain = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
-  };
-
-  const handleRetry = () => {
-    loadData();
-  };
-
-  if (loading) {
-    return (
-      <div className="dashboard-loading">
-        <div className="spinner"></div>
-        <p>Loading your dashboard...</p>
-      </div>
-    );
-  }
-  
-  if (user === null) {
-    return (
-      <div className="session-error">
-        <h3>Session Issue</h3>
-        <p>{error || 'Your session has expired or you are not authenticated.'}</p>
-        
-        <div className="action-buttons">
-          <button onClick={handleRetry}>Retry</button>
-          <button onClick={handleLoginAgain}>Login Again</button>
-        </div>
-        
-        <p className="support-text">
-          If the problem persists, contact support at 
-          <a href="mailto:support@remoteworker.com">support@remoteworker.com</a>
-        </p>
-      </div>
-    );
-  }
 
   const handleWithdrawNav = () => {
     // Check minimum balance
@@ -114,12 +75,31 @@ export default function WorkerDashboard() {
     navigate('/withdraw');
   };
 
+  if (loading) {
+    return (
+      <div className="dashboard-loading">
+        <div className="spinner"></div>
+        <p>Loading your dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="error-container">
+        <h3>Error Loading Dashboard</h3>
+        <p>{error}</p>
+        <button onClick={loadData}>Retry</button>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
         <div className="welcome-section">
           <h2>Welcome, {user.firstName} {user.lastName}</h2>
-          <p className="profile-type">{user.profileType === 'worker' ? 'Remote Worker' : 'Customer'}</p>
+          <p className="profile-type">Remote Worker</p>
         </div>
         
         <button 
