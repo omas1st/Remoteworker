@@ -17,20 +17,30 @@ export default function Register() {
     confirm: ''
   });
   const [countries, setCountries] = useState([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     setCountries(countryList().getData());
   }, []);
 
-  const handleChange = e =>
+  const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    setError('');
+  };
 
   const handleSubmit = async e => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
+    
     if (form.password !== form.confirm) {
-      return alert('Passwords do not match');
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
     }
+    
     try {
       const payload = {
         profileType: form.profileType,
@@ -42,27 +52,30 @@ export default function Register() {
         country: form.country,
         password: form.password
       };
+      
       const res = await api.post('/auth/register', payload);
 
-      // Store JWT & set default header
-      const token = res.data.token;
-      localStorage.setItem('token', token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-      // Redirect based on profileType
+      // Store token and redirect
+      localStorage.setItem('token', res.data.token);
+      
       if (form.profileType === 'worker') {
         navigate('/worker');
       } else {
         navigate('/customer');
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Registration failed');
+      console.error('Registration error:', err);
+      setError(err.response?.data?.message || err.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="form-container">
       <h2>Register</h2>
+      {error && <div className="error-message">{error}</div>}
+      
       <form onSubmit={handleSubmit}>
         <label>Profile Type</label>
         <select
@@ -146,8 +159,14 @@ export default function Register() {
           required
         />
 
-        <button type="submit">Register</button>
+        <button type="submit" disabled={loading}>
+          {loading ? 'Registering...' : 'Register'}
+        </button>
       </form>
+      
+      <div className="form-footer">
+        <p>Already have an account? <a href="/login">Login</a></p>
+      </div>
     </div>
   );
 }

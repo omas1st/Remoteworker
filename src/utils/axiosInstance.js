@@ -1,12 +1,16 @@
 import axios from 'axios';
 
-// Use Vercel production URL for API
-const baseURL = 'https://remoteworkerbackend.vercel.app/api';
+// Use environment variables
+const baseURL = process.env.REACT_APP_API_URL || 'https://remoteworkerbackend.vercel.app/api';
+const backendURL = process.env.REACT_APP_BACKEND_URL || 'https://remoteworkerbackend.vercel.app';
 
 // Create instance
 const api = axios.create({
   baseURL,
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 
+    'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest'
+  },
   withCredentials: true
 });
 
@@ -16,6 +20,10 @@ api.interceptors.request.use(config => {
   if (token) {
     config.headers['x-auth-token'] = token;
   }
+  
+  // Add backend URL to all requests
+  config.headers['X-Backend-URL'] = backendURL;
+  
   return config;
 });
 
@@ -23,11 +31,17 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   response => response,
   error => {
+    console.error('API Error:', error);
+    
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
-    return Promise.reject(error);
+    
+    return Promise.reject({
+      message: error.response?.data?.message || 'Network error',
+      status: error.response?.status || 500
+    });
   }
 );
 
