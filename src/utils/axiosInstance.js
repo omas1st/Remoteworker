@@ -1,36 +1,60 @@
 import axios from 'axios';
 
-// Make sure this matches exactly your deployed backend URL:
-const baseURL = process.env.REACT_APP_API_URL || 'https://remoteworker-nine.vercel.app/api';
+const baseURL = process.env.REACT_APP_API_URL || 'https://remoteworkerbackend.vercel.app/api';
 
 const api = axios.create({
   baseURL,
-  timeout: 20000, // 20s to cover slower cold starts
-  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+  timeout: 30000, // 30-second timeout
+  headers: { 
+    'Content-Type': 'application/json',
+    'X-Timeout': '30000' 
+  },
   withCredentials: true
 });
 
+// Add token to requests
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token');
-  if (token) config.headers['x-auth-token'] = token;
-  // cache-bust
-  config.params = { ...config.params, _: Date.now() };
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
   return config;
 });
 
+// Handle session timeouts
 api.interceptors.response.use(
   response => response,
   error => {
-    let message = 'Network error. Please check your connection.';
-    if (error.response) {
-      message = error.response.data?.message || `Server error: ${error.response.status}`;
-    } else if (error.code === 'ECONNABORTED') {
-      message = 'Request timed out. Please try again.';
-    } else if (error.request) {
-      message = 'No response from server. Please try again later.';
+    if (error.code === 'ECONNABORTED') {
+      return Promise.reject({
+        message: 'Request timed out. Please try again.',
+        code: 'TIMEOUT'
+      });
     }
-    return Promise.reject({ message, code: error.code, status: error.response?.status, response: error.response?.data });
+    
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    
+    return Promise.reject(error);
   }
 );
+
+// Session keep-alive function
+api.keepAlive = async () => {
+  try {
+    await api.get('/auth/keep-alive');
+  } catch (err) {
+    console.error('Keep-alive failed:', err);
+  }
+};
+
+// Start session keep-alive interval
+setInterval(() => {
+  if (localStorage.getItem('token')) {
+    api.keepAlive();
+  }
+}, 300000); // Every 5 minutes
 
 export default api;

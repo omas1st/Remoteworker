@@ -8,7 +8,13 @@ export default function AdminPanel() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const verifyAdmin = async () => {
+    // Session keep-alive on admin panel
+    const sessionTimer = setInterval(() => {
+      api.keepAlive();
+    }, 4 * 60 * 1000); // Every 4 minutes
+    
+    // Verify admin token
+    const verifySession = async () => {
       try {
         await api.get('/admin/users');
       } catch (err) {
@@ -16,14 +22,21 @@ export default function AdminPanel() {
       }
     };
     
-    verifyAdmin();
+    verifySession();
 
-    const socket = io(process.env.REACT_APP_API_URL || 'http://localhost:5000');
-    socket.on('adminNotification', data => {
-      alert(`Admin Notice:\nUser ${data.userId} ${data.status} "${data.taskTitle}" — $${data.amount}`);
+    // Listen for real-time updates
+    const socket = io(process.env.REACT_APP_API_URL || 'https://remoteworkerbackend.vercel.app', {
+      timeout: 30000
     });
     
-    return () => socket.disconnect();
+    socket.on('adminNotification', data => {
+      console.log('Admin notification:', data);
+    });
+    
+    return () => {
+      clearInterval(sessionTimer);
+      socket.disconnect();
+    };
   }, [navigate]);
 
   return (
