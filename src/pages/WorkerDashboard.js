@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import api from '../utils/axiosInstance';
 import './WorkerDashboard.css';
 import { useNavigate } from 'react-router-dom';
@@ -13,7 +13,8 @@ export default function WorkerDashboard() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const loadData = async () => {
+  // Wrap loadData in useCallback to memoize the function
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError('');
     
@@ -49,13 +50,15 @@ export default function WorkerDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]); // Add navigate as dependency
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]); // Now includes loadData in dependency array
 
   const handleWithdrawNav = () => {
+    if (!user) return;
+    
     // Check minimum balance
     if (user.walletBalance < 200) {
       return alert('Minimum withdrawal is $200');
@@ -94,6 +97,15 @@ export default function WorkerDashboard() {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="session-error">
+        <p>User data not available</p>
+        <button onClick={loadData}>Retry</button>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
@@ -105,6 +117,7 @@ export default function WorkerDashboard() {
         <button 
           className={`msg-btn ${messages.length > 0 ? 'has-messages' : ''}`}
           onClick={() => setShowMsgs(!showMsgs)}
+          aria-label="Notifications"
         >
           📨 {messages.length > 0 ? messages.length : ''}
         </button>
@@ -114,7 +127,13 @@ export default function WorkerDashboard() {
         <div className="messages-panel">
           <div className="panel-header">
             <h3>Your Notifications</h3>
-            <button className="close-btn" onClick={() => setShowMsgs(false)}>✕</button>
+            <button 
+              className="close-btn" 
+              onClick={() => setShowMsgs(false)}
+              aria-label="Close notifications"
+            >
+              ✕
+            </button>
           </div>
           
           {messages.length === 0 ? (
@@ -145,6 +164,7 @@ export default function WorkerDashboard() {
         <button 
           className="withdraw-btn"
           onClick={handleWithdrawNav}
+          disabled={!user}
         >
           Withdraw Funds
         </button>
