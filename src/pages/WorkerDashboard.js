@@ -4,7 +4,7 @@ import api from '../utils/axiosInstance';
 import './WorkerDashboard.css';
 
 export default function WorkerDashboard() {
-  const [user, setUser] = useState(undefined); // undefined = loading, null = error
+  const [user, setUser] = useState(undefined); // undefined = loading, null = unauthenticated
   const [tasks, setTasks] = useState([]);
   const [progress, setProgress] = useState([]);
   const [messages, setMessages] = useState([]);
@@ -12,13 +12,15 @@ export default function WorkerDashboard() {
 
   const loadData = async () => {
     try {
+      // Fetch current user
       const { data: u } = await api.get('/auth/me');
       setUser(u);
 
+      // Fetch tasks
       const { data: t } = await api.get('/tasks');
       setTasks(t);
 
-      // build progress
+      // Build task progress for this user
       const subs = t.flatMap(task =>
         (task.submissions || [])
           .filter(s => s.user === u._id)
@@ -26,10 +28,11 @@ export default function WorkerDashboard() {
       );
       setProgress(subs);
 
-      // fetch messages
+      // Fetch inbox messages
       const { data: msgs } = await api.get('/users/messages');
       setMessages(msgs);
-    } catch {
+    } catch (err) {
+      // Any error (including 401) => treat as unauthenticated
       setUser(null);
     }
   };
@@ -38,32 +41,28 @@ export default function WorkerDashboard() {
     loadData();
   }, []);
 
+  // Loading state
   if (user === undefined) {
     return <div className="dashboard-loading">Loading...</div>;
   }
+
+  // Unauthenticated => redirect to login
   if (user === null) {
-    return (
-      <div>
-        <p>Session expired or not authenticated.</p>
-        <button onClick={() => window.location.reload()}>Retry</button>
-      </div>
-    );
+    window.location.href = '/login';
+    return null;
   }
 
+  // Authenticated => render dashboard
   const handleWithdrawNav = () => {
-    // Check minimum balance
     if (user.walletBalance < 200) {
       return alert('Minimum withdrawal is $200');
     }
-    // Check 7-day requirement
     const registeredDate = new Date(user.registeredAt);
     const now = new Date();
-    const diffMs = now - registeredDate;
-    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    const diffDays = (now - registeredDate) / (1000 * 60 * 60 * 24);
     if (diffDays < 7) {
       return alert('You can only withdraw after 7 days of registration');
     }
-    // Passed checks
     window.location.href = '/withdraw';
   };
 
@@ -79,7 +78,9 @@ export default function WorkerDashboard() {
       {showMsgs && (
         <div className="messages-panel">
           <h3>Your Notifications</h3>
-          {messages.length === 0 ? <p>No messages.</p> : (
+          {messages.length === 0 ? (
+            <p>No messages.</p>
+          ) : (
             <ul>
               {messages.map((m, i) => (
                 <li key={i}>
