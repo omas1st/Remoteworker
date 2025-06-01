@@ -1,8 +1,8 @@
 // frontend/src/utils/axiosInstance.js
 import axios from 'axios';
 
-// In production, point to the deployed backend's /api base.
-// In development, fallback to your .env (http://localhost:5000/api).
+// In production, use the deployed backend’s /api base.
+// In development, fall back to REACT_APP_API_URL (http://localhost:5000/api).
 const baseURL =
   process.env.NODE_ENV === 'production'
     ? 'https://rjbbackend.vercel.app/api'
