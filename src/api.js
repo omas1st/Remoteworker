@@ -5,7 +5,7 @@ import axios from 'axios';
 // In development, use whatever REACT_APP_API_URL is (which should be http://localhost:5000).
 const baseURL =
   process.env.NODE_ENV === 'production'
-    ? 'https://remoteworkerbackend.vercel.app/'
+    ? 'https://localhost:5000/'
     : process.env.REACT_APP_API_URL;
 
 const api = axios.create({
